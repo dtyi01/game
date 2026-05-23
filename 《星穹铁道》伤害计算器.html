@@ -1,0 +1,850 @@
+<!DOCTYPE html>
+<!-- saved from url=(0134)file:///D:/%E6%B8%B8%E6%88%8F/%E3%80%8A%E6%98%9F%E7%A9%B9%E9%93%81%E9%81%93%E3%80%8B%E4%BC%A4%E5%AE%B3%E8%AE%A1%E7%AE%97%E5%99%A8.html -->
+<html lang="zh-CN"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8"><meta content="default-src &#39;none&#39;; style-src * &#39;unsafe-inline&#39;; script-src * &#39;unsafe-inline&#39;; img-src * data: blob:; font-src * data:; media-src * data: blob:; connect-src &#39;none&#39;; form-action &#39;none&#39;; frame-src &#39;none&#39;; object-src &#39;none&#39;; base-uri &#39;none&#39;" http-equiv="Content-Security-Policy">
+
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>《星穹铁道》伤害计算器</title>
+<style>
+        :root {
+            --bg-color: #0b0c15;
+            --panel-bg: rgba(20, 22, 35, 0.85);
+            --primary-gold: #d4af37;
+            --secondary-gold: #f9e58a;
+            --text-main: #e0e0e0;
+            --text-muted: #8a8f9d;
+            --border-color: rgba(212, 175, 55, 0.3);
+            --input-bg: rgba(0, 0, 0, 0.3);
+            --accent-blue: #4facfe;
+            --accent-red: #ff5858;
+            --accent-green: #00f260;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            overflow-x: hidden;
+            min-height: 100vh;
+            position: relative;
+        }
+
+        /* Background Canvas */
+        #bg-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            pointer-events: none;
+        }
+
+        /* Layout */
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+            position: relative;
+            z-index: 1;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 20px 0;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        h1 {
+            color: var(--primary-gold);
+            font-size: 2.5rem;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 10px;
+            text-shadow: 0 0 10px rgba(212, 175, 55, 0.5);
+        }
+
+        h2 {
+            font-size: 1.2rem;
+            color: var(--text-muted);
+            font-weight: 400;
+        }
+
+        /* Main Grid */
+        .main-grid {
+            display: grid;
+            grid-template-columns: 1.2fr 0.8fr;
+            gap: 25px;
+        }
+
+        @media (max-width: 1024px) {
+            .main-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Panels */
+        .panel {
+            background: var(--panel-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 20px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+            margin-bottom: 20px;
+        }
+
+        .panel-title {
+            color: var(--secondary-gold);
+            font-size: 1.1rem;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid rgba(212, 175, 55, 0.2);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .panel-title svg {
+            width: 20px;
+            height: 20px;
+            fill: var(--primary-gold);
+        }
+
+        /* Inputs Grid */
+        .input-group {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .input-item {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .input-item label {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            margin-bottom: 5px;
+        }
+
+        .input-item input[type="number"],
+        .input-item select {
+            background: var(--input-bg);
+            border: 1px solid var(--border-color);
+            color: var(--text-main);
+            padding: 8px 12px;
+            border-radius: 4px;
+            font-size: 0.95rem;
+            transition: all 0.3s ease;
+        }
+
+        .input-item input[type="number"]:focus,
+        .input-item select:focus {
+            outline: none;
+            border-color: var(--primary-gold);
+            box-shadow: 0 0 5px rgba(212, 175, 55, 0.3);
+        }
+
+        .input-item input[type="range"] {
+            margin-top: 5px;
+            accent-color: var(--primary-gold);
+        }
+
+        .hint {
+            font-size: 0.7rem;
+            color: #666;
+            margin-top: 2px;
+        }
+
+        /* Buttons */
+        .btn-group {
+            display: flex;
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        button {
+            padding: 10px 25px;
+            border: 1px solid var(--primary-gold);
+            background: rgba(212, 175, 55, 0.1);
+            color: var(--primary-gold);
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            border-radius: 4px;
+            text-transform: uppercase;
+            font-size: 0.9rem;
+        }
+
+        button:hover {
+            background: var(--primary-gold);
+            color: #000;
+            box-shadow: 0 0 15px rgba(212, 175, 55, 0.6);
+        }
+
+        /* Results */
+        .result-card {
+            background: rgba(0, 0, 0, 0.2);
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 10px;
+            border-left: 3px solid var(--primary-gold);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .result-label {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+        }
+
+        .result-value {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: var(--text-main);
+        }
+
+        .result-value.total {
+            color: var(--primary-gold);
+            font-size: 1.5rem;
+        }
+
+        /* Chart Area */
+        .chart-container {
+            width: 100%;
+            height: 250px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 20px 0;
+            position: relative;
+        }
+
+        #chart-canvas {
+            max-width: 100%;
+            max-height: 100%;
+        }
+
+        /* Formula Text */
+        .formula-box {
+            background: rgba(0, 0, 0, 0.4);
+            padding: 15px;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            color: #aaa;
+            line-height: 1.6;
+            margin-top: 20px;
+            border: 1px dashed #444;
+        }
+
+        .formula-box strong {
+            color: var(--secondary-gold);
+        }
+
+        footer {
+            text-align: center;
+            margin-top: 40px;
+            padding: 20px;
+            color: #555;
+            font-size: 0.8rem;
+            border-top: 1px solid #222;
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0b0c15;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #333;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--primary-gold);
+        }
+    </style>
+</head>
+<body>
+
+<canvas id="bg-canvas" width="2000" height="986"></canvas>
+<div class="container">
+<header>
+<h1>《星穹铁道》伤害计算器</h1>
+<h2>综合计算基础伤害与击破伤害（包括弱点击破与超击破），支持主击破后续效果（灼烧、冻结、裂伤等）</h2>
+</header>
+<main class="main-grid">
+
+<section class="inputs-column">
+
+<div class="panel">
+<div class="panel-title">
+<svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z"></path></svg>
+                        角色基础属性
+                    </div>
+<div class="input-group">
+<div class="input-item">
+<label>角色等级</label>
+<input id="char-level" max="80" min="1" type="number" value="80">
+<span class="hint">推荐升至80级以获得最大击破系数</span>
+</div>
+<div class="input-item">
+<label>攻击力</label>
+<input id="atk" min="0" type="number" value="2500">
+<span class="hint">影响基础伤害计算</span>
+</div>
+<div class="input-item">
+<label>生命值</label>
+<input id="hp" min="0" type="number" value="5000">
+<span class="hint">影响生命值倍率伤害</span>
+</div>
+<div class="input-item">
+<label>暴击率 (%)</label>
+<input id="cr" max="150" min="0" type="number" value="60">
+<span class="hint">超过100%按1:2转换为暴击伤害</span>
+</div>
+<div class="input-item">
+<label>暴击伤害 (%)</label>
+<input id="cd" max="300" min="0" type="number" value="120">
+</div>
+<div class="input-item">
+<label>属性增伤 (%)</label>
+<input id="dmg-bonus" max="300" min="0" type="number" value="30">
+<span class="hint">全增伤+属性增伤+技能增伤</span>
+</div>
+</div>
+</div>
+
+<div class="panel">
+<div class="panel-title">
+<svg viewBox="0 0 24 24"><path d="M7 2v11h3v9l7-12h-4l4-8z"></path></svg>
+                        武器与技能
+                    </div>
+<div class="input-group">
+<div class="input-item">
+<label>技能倍率 (%)</label>
+<input id="skill-rate" max="500" min="0" type="number" value="200">
+<span class="hint">攻击力 × 技能倍率</span>
+</div>
+<div class="input-item">
+<label>生命值倍率 (%)</label>
+<input id="hp-rate" max="50" min="0" type="number" value="0">
+<span class="hint">生命值 × 生命值倍率（部分角色）</span>
+</div>
+<div class="input-item">
+<label>减防 (%)</label>
+<input id="def-reduction" max="100" min="0" type="number" value="0">
+<span class="hint">与穿透加算，≥100%时防御乘区为1</span>
+</div>
+<div class="input-item">
+<label>穿透 (%)</label>
+<input id="res-pen" max="100" min="0" type="number" value="0">
+<span class="hint">与穿透累加，无稀释</span>
+</div>
+</div>
+</div>
+
+<div class="panel">
+<div class="panel-title">
+<svg viewBox="0 0 24 24"><path d="M12 2L2 22h20L12 2zm0 3.5L18.5 20H5.5L12 5.5zM11 10v4h2v-4h-2zm0 6v2h2v-2h-2z"></path></svg>
+                        击破属性
+                    </div>
+<div class="input-group">
+<div class="input-item">
+<label>击破特攻 (%)</label>
+<input id="break-effect" max="300" min="0" type="number" value="100">
+<span class="hint">影响所有击破相关伤害</span>
+</div>
+<div class="input-item">
+<label>伤害属性</label>
+<select id="element">
+<option data-coeff="2" value="physical">物理 (200%)</option>
+<option data-coeff="2" value="fire">火 (200%)</option>
+<option data-coeff="0.5" value="ice">冰 (50%)</option>
+<option data-coeff="1" value="lightning">雷 (100%)</option>
+<option data-coeff="1.5" value="wind">风 (150%)</option>
+<option data-coeff="0.5" value="quantum">量子 (50%)</option>
+<option data-coeff="0.5" value="imaginary">虚数 (50%)</option>
+</select>
+<span class="hint">括号内为属性击破系数</span>
+</div>
+<div class="input-item">
+<label>超击破增伤 (%)</label>
+<input id="super-break-bonus" max="200" min="0" type="number" value="0">
+</div>
+<div class="input-item">
+<label>削韧值</label>
+<input id="toughness-reduce" max="30" min="0" type="number" value="10">
+<span class="hint">每点对应0.1单位，影响超击破伤害</span>
+</div>
+<div class="input-item">
+<label>韧性条长度</label>
+<input id="toughness-len" max="60" min="10" type="number" value="30">
+<span class="hint">影响韧性系数：(长度 + 20) / 40</span>
+</div>
+<div class="input-item">
+<label>击破后续效果</label>
+<select id="dot-type">
+<option value="none">无</option>
+<option value="burn">灼烧 (火)</option>
+<option value="shock">触电 (雷)</option>
+<option value="windblight">风化 (风)</option>
+<option value="bleed">裂伤 (物理)</option>
+<option value="freeze">冻结 (冰)</option>
+<option value="entanglement">纠缠 (量子)</option>
+<option value="imprisonment">禁锢 (虚数)</option>
+</select>
+</div>
+</div>
+</div>
+
+<div class="panel">
+<div class="panel-title">
+<svg viewBox="0 0 24 24"><path d="M12 2c1.1 0 2 .9 2 2s-.9 2-2 2-2-.9-2-2 .9-2 2-2zm9 7h-6v13h-2v-6h-2v6H9V9H3V7h18v2z"></path></svg>
+                        怪物属性
+                    </div>
+<div class="input-group">
+<div class="input-item">
+<label>怪物等级</label>
+<input id="enemy-level" max="95" min="1" type="number" value="80">
+</div>
+<div class="input-item">
+<label>怪物类型</label>
+<select id="enemy-type">
+<option value="normal">普通敌人 (HP: 10000)</option>
+<option value="elite">精英敌人 (HP: 50000)</option>
+<option value="boss">首领 (HP: 200000)</option>
+</select>
+</div>
+<div class="input-item">
+<label>弱点属性状态</label>
+<select id="weakness">
+<option value="yes">是 (0%抗性)</option>
+<option value="no">否 (20%抗性)</option>
+</select>
+</div>
+<div class="input-item">
+<label>破韧状态</label>
+<select id="broken">
+<option value="yes">是 (无减伤)</option>
+<option value="no">否 (10%减伤)</option>
+</select>
+</div>
+<div class="input-item">
+<label>减抗 (%)</label>
+<input id="res-red" max="100" min="0" type="number" value="0">
+</div>
+<div class="input-item">
+<label>易伤 (%)</label>
+<input id="vulnerability" max="100" min="0" type="number" value="0">
+</div>
+</div>
+</div>
+<div class="btn-group">
+<button id="calc-btn">计算伤害</button>
+<button id="reset-btn">重置</button>
+</div>
+</section>
+
+<aside class="results-column">
+<div class="panel" style="position: sticky; top: 20px;">
+<div class="panel-title">
+<svg viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM9 17H7v-7h2v7zm4 0h-2V7h2v10zm4 0h-2v-4h2v4z"></path></svg>
+                        伤害计算结果
+                    </div>
+<div class="result-card">
+<span class="result-label">基础伤害 (直伤)</span>
+<span class="result-value" id="res-basic">5,590</span>
+</div>
+<div class="result-card">
+<span class="result-label">击破伤害</span>
+<span class="result-value" id="res-break">9,418</span>
+</div>
+<div class="result-card">
+<span class="result-label">超击破伤害</span>
+<span class="result-value" id="res-super-break">377</span>
+</div>
+<div class="result-card">
+<span class="result-label">持续伤害 (DOT)</span>
+<span class="result-value" id="res-dot">0</span>
+</div>
+<div class="result-card" style="border-left-color: #fff; background: rgba(212, 175, 55, 0.1);">
+<span class="result-label">总伤害期望</span>
+<span class="result-value total" id="res-total">15,384</span>
+</div>
+<div class="panel-title" style="margin-top: 30px;">伤害分布</div>
+<div class="chart-container">
+<canvas height="250" id="chart-canvas" width="300"></canvas>
+</div>
+<div class="panel-title">计算公式说明</div>
+<div class="formula-box" id="formula-text">
+                <strong>基础伤害:</strong> (攻击力×技能倍率 + 生命值×生命值倍率) × (1+暴击率×暴击伤害) × (1+增伤) × 怪物区<br>
+                <span style="color:#666; font-size:0.75em">→ 怪物区 (防御 × 抗性 × 易伤 × 减伤) = 0.5000</span><br><br>
+                <strong>击破伤害:</strong> 击破系数 × 属性系数 × (1+击破特攻) × 韧性系数 × 怪物区<br>
+                <span style="color:#666; font-size:0.75em">→ 击破系数 = 3767 × (等级/80), 属性系数 = 2</span><br><br>
+                <strong>超击破伤害:</strong> (击破系数/10) × (1+击破特攻) × (削韧值/10) × (1+超击增伤) × 怪物区<br><br>
+                <strong>持续伤害:</strong> 基础DoT公式 × (1+击破特攻) × 怪物区
+            </div>
+</div>
+</aside>
+</main>
+<footer>
+            《星穹铁道》伤害计算器 v1.0 | 基于社区权威数据构建 | 注意：此为回合制游戏工具，不包含DPS计算<br>
+            所有计算基于公式：最终伤害 = 角色区 × 怪物区
+        </footer>
+</div>
+<script>
+        // --- 1. Background Animation (Canvas) ---
+        const bgCanvas = document.getElementById('bg-canvas');
+        const bgCtx = bgCanvas.getContext('2d');
+        let width, height;
+        let particles = [];
+
+        function resizeBg() {
+            width = bgCanvas.width = window.innerWidth;
+            height = bgCanvas.height = window.innerHeight;
+        }
+
+        class Particle {
+            constructor() {
+                this.reset();
+            }
+            reset() {
+                this.x = Math.random() * width;
+                this.y = Math.random() * height;
+                this.size = Math.random() * 2;
+                this.speedX = (Math.random() - 0.5) * 0.5;
+                this.speedY = (Math.random() - 0.5) * 0.5;
+                this.opacity = Math.random() * 0.5 + 0.1;
+            }
+            update() {
+                this.x += this.speedX;
+                this.y += this.speedY;
+                if (this.x < 0 || this.x > width || this.y < 0 || this.y > height) this.reset();
+            }
+            draw() {
+                bgCtx.fillStyle = `rgba(212, 175, 55, ${this.opacity})`;
+                bgCtx.beginPath();
+                bgCtx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                bgCtx.fill();
+            }
+        }
+
+        function initParticles() {
+            particles = [];
+            for (let i = 0; i < 100; i++) particles.push(new Particle());
+        }
+
+        function animateBg() {
+            bgCtx.clearRect(0, 0, width, height);
+            particles.forEach(p => {
+                p.update();
+                p.draw();
+            });
+            requestAnimationFrame(animateBg);
+        }
+
+        window.addEventListener('resize', resizeBg);
+        resizeBg();
+        initParticles();
+        animateBg();
+
+        // --- 2. Chart Drawing (Canvas) ---
+        function drawChart(basic, breakDmg, superBreak, dot) {
+            const canvas = document.getElementById('chart-canvas');
+            const ctx = canvas.getContext('2d');
+            const w = canvas.width;
+            const h = canvas.height;
+            const centerX = w / 2;
+            const centerY = h / 2;
+            const radius = Math.min(w, h) / 2 - 10;
+
+            ctx.clearRect(0, 0, w, h);
+
+            const total = basic + breakDmg + superBreak + dot;
+            if (total === 0) {
+                ctx.fillStyle = '#333';
+                ctx.beginPath();
+                ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.fillStyle = '#888';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.font = '14px Arial';
+                ctx.fillText('无数据', centerX, centerY);
+                return;
+            }
+
+            const data = [
+                { value: basic, color: '#4facfe', label: '直伤' },
+                { value: breakDmg, color: '#d4af37', label: '击破' },
+                { value: superBreak, color: '#ff5858', label: '超击破' },
+                { value: dot, color: '#00f260', label: '持续' }
+            ];
+
+            let startAngle = -Math.PI / 2;
+
+            data.forEach(slice => {
+                if (slice.value <= 0) return;
+                const sliceAngle = (slice.value / total) * 2 * Math.PI;
+                
+                // Draw slice
+                ctx.beginPath();
+                ctx.moveTo(centerX, centerY);
+                ctx.arc(centerX, centerY, radius, startAngle, startAngle + sliceAngle);
+                ctx.fillStyle = slice.color;
+                ctx.fill();
+
+                // Draw Label (if slice is big enough)
+                if (slice.value / total > 0.05) {
+                    const midAngle = startAngle + sliceAngle / 2;
+                    const labelR = radius * 0.7;
+                    const lx = centerX + Math.cos(midAngle) * labelR;
+                    const ly = centerY + Math.sin(midAngle) * labelR;
+                    
+                    ctx.fillStyle = '#fff';
+                    ctx.font = 'bold 12px Arial';
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillText(slice.label, lx, ly);
+                }
+
+                startAngle += sliceAngle;
+            });
+
+            // Inner circle for Doughnut
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, radius * 0.4, 0, Math.PI * 2);
+            ctx.fillStyle = '#141623'; // Match panel bg
+            ctx.fill();
+        }
+
+        // --- 3. Calculation Logic ---
+        
+        // Helper to get number value
+        const getVal = (id) => parseFloat(document.getElementById(id).value) || 0;
+
+        function calculate() {
+            // Inputs
+            const charLevel = getVal('char-level');
+            const atk = getVal('atk');
+            const hp = getVal('hp');
+            let cr = getVal('cr');
+            const cd = getVal('cd');
+            const dmgBonus = getVal('dmg-bonus');
+            
+            const skillRate = getVal('skill-rate') / 100;
+            const hpRate = getVal('hp-rate') / 100;
+            const defRed = getVal('def-reduction') / 100;
+            const resPen = getVal('res-pen') / 100;
+
+            const breakEffect = getVal('break-effect') / 100;
+            const elementSelect = document.getElementById('element');
+            const elementCoeff = parseFloat(elementSelect.options[elementSelect.selectedIndex].dataset.coeff);
+            const superBreakBonus = getVal('super-break-bonus') / 100;
+            const toughnessReduce = getVal('toughness-reduce');
+            const toughnessLen = getVal('toughness-len');
+            
+            const dotType = document.getElementById('dot-type').value;
+
+            const enemyLevel = getVal('enemy-level');
+            const enemyType = document.getElementById('enemy-type').value;
+            const isWeakness = document.getElementById('weakness').value === 'yes';
+            const isBroken = document.getElementById('broken').value === 'yes';
+            const resRed = getVal('res-red') / 100;
+            const vulnerability = getVal('vulnerability') / 100;
+
+            // --- Constants ---
+            const BASE_BREAK_80 = 3767;
+            const breakBase = BASE_BREAK_80 * (charLevel / 80);
+            const superBreakBase = breakBase / 10;
+            
+            // Monster HP Base for Bleed
+            let enemyHP = 10000;
+            if (enemyType === 'elite') enemyHP = 50000;
+            if (enemyType === 'boss') enemyHP = 200000;
+
+            // --- Defense Zone ---
+            const atkDef = 10 * charLevel + 200;
+            const targetDef = 10 * enemyLevel + 200;
+            
+            let defMult;
+            const totalDefRed = defRed + resPen;
+            if (totalDefRed >= 1) {
+                defMult = 1;
+            } else {
+                defMult = atkDef / (atkDef + targetDef * (1 - totalDefRed));
+            }
+
+            // --- Resistance Zone ---
+            let res = 0.2; // Base 20% if not weak
+            if (isWeakness) res = 0;
+            res = Math.max(0, res - resRed); // Apply reduction
+            // Res formula: if res < 0, 1 - res/2. if 0<=res<0.75, 1-res. if res>=0.75, 1/(1+4*res)
+            let resMult;
+            if (res < 0) resMult = 1 - res / 2;
+            else if (res < 0.75) resMult = 1 - res;
+            else resMult = 1 / (1 + 4 * res);
+
+            // --- Vulnerability & Reduction ---
+            const vulnMult = 1 + vulnerability;
+            const dmgRedMult = isBroken ? 1 : 0.9; // 90% reduction if not broken
+
+            // Monster Zone Total
+            const monsterZone = defMult * resMult * vulnMult * dmgRedMult;
+
+            // --- 1. Basic Damage ---
+            // CR cap logic for expectation: CR% * CD% added to base multiplier
+            let effectiveCr = cr / 100;
+            let effectiveCd = cd / 100;
+            if (effectiveCr > 1) {
+                const excess = effectiveCr - 1;
+                effectiveCr = 1;
+                effectiveCd += excess * 2; // 1:2 conversion
+            }
+            
+            const avgDmgMult = 1 + effectiveCr * effectiveCd;
+            const totalDmgBonus = 1 + dmgBonus / 100;
+
+            const basicDmg = (atk * skillRate + hp * hpRate) * avgDmgMult * totalDmgBonus * monsterZone;
+
+            // --- 2. Break Damage ---
+            const toughnessCoeff = (toughnessLen + 20) / 40;
+            const breakDmg = breakBase * elementCoeff * (1 + breakEffect) * toughnessCoeff * monsterZone;
+
+            // --- 3. Super Break Damage ---
+            // Note: Usually requires Broken state. If not broken, game logic prevents it, but calculator shows potential.
+            // We apply calculation regardless of "Broken" checkbox unless user wants strict simulation. 
+            // However, formula implies monsterZone. If not broken, dmgRedMult is 0.1, so SB is tiny.
+            // Let's respect the monsterZone which includes dmgRedMult.
+            const superBreakDmg = superBreakBase * (1 + breakEffect) * (toughnessReduce / 10) * (1 + superBreakBonus) * monsterZone;
+
+            // --- 4. DoT Damage ---
+            let dotDmg = 0;
+            if (dotType !== 'none') {
+                // Base DoT calculation usually ignores DEF/RES differently in some games, 
+                // but HSR DoTs follow standard damage formula (DEF * RES) but usually ignore DMG Bonus (use specific DoT bonus).
+                // The prompt says "Break Effect" impacts DoT.
+                // Prompt formulas:
+                // Burn: Base * 100% * (1+BE) * MonsterZone
+                // Shock: Base * 200% * (1+BE) * MonsterZone
+                // Windblight: Base * 100% * 3 * (1+BE) * MonsterZone
+                // Bleed: min(...) * (1+BE) * MonsterZone
+                // Freeze: Base * 100% * (1+BE) * MonsterZone
+                // Entanglement: Base * 60% * 2 * ToughnessCoeff * (1+BE) * MonsterZone
+                
+                let dotBase = breakBase; 
+                let dotMult = 0;
+
+                switch(dotType) {
+                    case 'burn': dotMult = 1.0; break;
+                    case 'shock': dotMult = 2.0; break;
+                    case 'windblight': dotMult = 3.0; break;
+                    case 'freeze': dotMult = 1.0; break;
+                    case 'entanglement': dotMult = 1.2 * toughnessCoeff; break; // 60% * 2 layers
+                    case 'bleed':
+                        // Special logic
+                        const part1 = 0.07 * enemyHP;
+                        const part2 = 0.16 * (enemyType === 'normal' ? enemyHP : (enemyType === 'elite' ? 50000 : 200000)); // Simplified from prompt logic
+                        // Prompt: min(7%*EliteHP, 16%*MobHP, 2*Base*ToughnessCoeff)
+                        // Wait, prompt says: min(7%×精英血量, 16%×小怪血量, 2×击破系数×韧性系数)
+                        // This implies checking against caps regardless of current enemy type? Or based on type?
+                        // Usually Bleed is: Min( 7% MaxHP, 16% BaseHP, ... )
+                        // Let's follow prompt strictly:
+                        const cap1 = 0.07 * (enemyType === 'boss' ? 200000 : 50000); // Elite HP used for 7% cap
+                        const cap2 = 0.16 * 10000; // Mob HP used for 16% cap
+                        const cap3 = 2 * breakBase * toughnessCoeff;
+                        dotBase = Math.min(cap1, cap2, cap3);
+                        dotMult = 1;
+                        break;
+                    case 'imprisonment': dotMult = 0; break;
+                }
+
+                dotDmg = dotBase * dotMult * (1 + breakEffect) * monsterZone;
+            }
+
+            // --- Results ---
+            const total = basicDmg + breakDmg + superBreakDmg + dotDmg;
+
+            // Update DOM
+            document.getElementById('res-basic').innerText = Math.round(basicDmg).toLocaleString();
+            document.getElementById('res-break').innerText = Math.round(breakDmg).toLocaleString();
+            document.getElementById('res-super-break').innerText = Math.round(superBreakDmg).toLocaleString();
+            document.getElementById('res-dot').innerText = Math.round(dotDmg).toLocaleString();
+            document.getElementById('res-total').innerText = Math.round(total).toLocaleString();
+
+            // Update Chart
+            drawChart(basicDmg, breakDmg, superBreakDmg, dotDmg);
+
+            // Update Formula Text
+            updateFormulaText({
+                basicDmg, breakDmg, superBreakDmg, dotDmg,
+                defMult, resMult, vulnMult, dmgRedMult, monsterZone,
+                avgDmgMult, totalDmgBonus, breakEffect, toughnessCoeff, elementCoeff
+            });
+        }
+
+        function updateFormulaText(vars) {
+            const div = document.getElementById('formula-text');
+            div.innerHTML = `
+                <strong>基础伤害:</strong> (攻击力×技能倍率 + 生命值×生命值倍率) × (1+暴击率×暴击伤害) × (1+增伤) × 怪物区<br>
+                <span style="color:#666; font-size:0.75em">→ 怪物区 (防御 × 抗性 × 易伤 × 减伤) = ${vars.monsterZone.toFixed(4)}</span><br><br>
+                <strong>击破伤害:</strong> 击破系数 × 属性系数 × (1+击破特攻) × 韧性系数 × 怪物区<br>
+                <span style="color:#666; font-size:0.75em">→ 击破系数 = 3767 × (等级/80), 属性系数 = ${vars.elementCoeff}</span><br><br>
+                <strong>超击破伤害:</strong> (击破系数/10) × (1+击破特攻) × (削韧值/10) × (1+超击增伤) × 怪物区<br><br>
+                <strong>持续伤害:</strong> 基础DoT公式 × (1+击破特攻) × 怪物区
+            `;
+        }
+
+        // --- 4. Event Listeners ---
+        const inputs = document.querySelectorAll('input, select');
+        inputs.forEach(input => {
+            input.addEventListener('input', calculate);
+        });
+
+        document.getElementById('calc-btn').addEventListener('click', calculate);
+        
+        document.getElementById('reset-btn').addEventListener('click', () => {
+            // Reset to default values as per PDD
+            document.getElementById('char-level').value = 80;
+            document.getElementById('atk').value = 2500;
+            document.getElementById('hp').value = 5000;
+            document.getElementById('cr').value = 60;
+            document.getElementById('cd').value = 120;
+            document.getElementById('dmg-bonus').value = 30;
+            document.getElementById('skill-rate').value = 200;
+            document.getElementById('hp-rate').value = 0;
+            document.getElementById('def-reduction').value = 0;
+            document.getElementById('res-pen').value = 0;
+            document.getElementById('break-effect').value = 100;
+            document.getElementById('element').value = 'physical';
+            document.getElementById('super-break-bonus').value = 0;
+            document.getElementById('toughness-reduce').value = 10;
+            document.getElementById('toughness-len').value = 30;
+            document.getElementById('dot-type').value = 'none';
+            document.getElementById('enemy-level').value = 80;
+            document.getElementById('enemy-type').value = 'normal';
+            document.getElementById('weakness').value = 'yes';
+            document.getElementById('broken').value = 'yes';
+            document.getElementById('res-red').value = 0;
+            document.getElementById('vulnerability').value = 0;
+            calculate();
+        });
+
+        // Initial calculation
+        calculate();
+
+    </script>
+
+</body></html>
